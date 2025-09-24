@@ -9,5 +9,9 @@ class Pratica4ApplicationTests {
 	@Test
 	void contextLoads() {
 	}
-
+	@Test
+    void testMain() {
+        
+        Pratica4Application.main(new String[] {});
+    }
 }
