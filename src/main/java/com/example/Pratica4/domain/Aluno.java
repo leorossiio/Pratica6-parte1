@@ -3,13 +3,11 @@ package com.example.Pratica4.domain;
 public class Aluno {
 
     private String nome;
-    private int cursosConcluidos;
-    private boolean premium;
+    private StatusAluno status;
 
     public Aluno(String nome, int cursosConcluidos) {
         this.nome = nome;
-        this.cursosConcluidos = cursosConcluidos;
-        this.premium = false;
+        this.status = StatusAluno.comCursos(cursosConcluidos);
     }
 
     public String getNome() {
@@ -17,18 +15,18 @@ public class Aluno {
     }
 
     public int getCursosConcluidos() {
-        return cursosConcluidos;
+        return this.status.getCursosConcluidos();
     }
 
     public boolean isPremium() {
-        return premium;
+        return this.status.isPremium();
+    }
+    
+    public StatusAluno getStatus() {
+        return this.status;
     }
 
-    public void setCursosConcluidos(int cursosConcluidos) {
-        this.cursosConcluidos = cursosConcluidos;
-    }
-
-    public void setPremium(boolean premium) {
-        this.premium = premium;
+    public void setStatus(StatusAluno novoStatus) {
+        this.status = novoStatus;
     }
 }
