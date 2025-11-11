@@ -13,4 +13,10 @@ public class AlunoService {
         
         aluno.setStatus(proximoStatus);
     }
+
+    public void atualizarPlanoSeElegivel(Aluno aluno) {
+    StatusAluno statusAtual = aluno.getStatus();
+    StatusAluno novoStatus = statusAtual.adicionarCurso();
+    aluno.setStatus(novoStatus);
+    }   
 }
