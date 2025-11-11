@@ -4,7 +4,7 @@ public class Aluno {
 
     private String nome;
     private StatusAluno status;
-    private boolean premium; // ✅ NOVO ATRIBUTO
+    private boolean premium;
 
     public Aluno(String nome, int cursosConcluidos) {
         this.nome = nome;
