@@ -24,6 +24,10 @@ public class StatusAluno {
         return cursosConcluidos;
     }
 
+    public int getCursos() {
+        return this.cursosConcluidos;
+    }
+
     public boolean isPremium() {
         return premium;
     }
@@ -31,7 +35,7 @@ public class StatusAluno {
     public StatusAluno adicionarCurso() {
         return new StatusAluno(this.cursosConcluidos + 1);
     }
-    
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
