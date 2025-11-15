@@ -1,65 +1,135 @@
 package com.example.Pratica4;
 
+import com.example.Pratica4.entity.Aluno;
+import com.example.Pratica4.repository.AlunoRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import com.example.Pratica4.domain.Aluno;
-import com.example.Pratica4.service.AlunoService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import java.util.HashMap;
+import java.util.Map;
 
-class AlunoTest {
-    private final AlunoService alunoService = new AlunoService();
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-    // Leonardo
-    @Test
-    void testarGetNome() {
-        // Arrange
-        Aluno aluno = new Aluno("Guilherme", 5);
+@SpringBootTest
+@AutoConfigureMockMvc
+@Transactional
+class AlunoStoriesIntegrationTest {
 
-        // Act
-        String nome = aluno.getNome();
+    @Autowired
+    private MockMvc mockMvc;
 
-        // Assert
-        assertEquals("Guilherme", nome, "O getter deve retornar o nome correto");
+    @Autowired
+    private AlunoRepository alunoRepository;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    private Map<String, String> bodyRequisicao;
+
+    @BeforeEach
+    void setUp() {
+        alunoRepository.deleteAll();
+
+        bodyRequisicao = new HashMap<>();
+        bodyRequisicao.put("mensagem", "Participando do fórum!");
     }
 
-    // Leonardo
+    // Responsável: Leonardo Rossi
     @Test
-    void alunoSeTornaPremiumQuandoConclui12Cursos() {
+    void deveFalharAoCriarAlunoComNomeVazio() {
+
         // Arrange
-        Aluno aluno = new Aluno("Guilherme", 12);
+        String nomeInvalido = "";
 
-        // Act
-        alunoService.atualizarPlanoSeElegivel(aluno);
+        // Act & Assert
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+            new Aluno(nomeInvalido, 0);
+        });
 
-        // Assert
-        assertTrue(aluno.isPremium(), "O aluno deveria ser Premium");
+        assertEquals("Nome não pode ser nulo ou vazio", exception.getMessage());
     }
 
-    // Guilherme
+    // Responsável: Leonardo Rossi
     @Test
-    void alunoNaoSeTornaPremiumAntesDe12Cursos() {
+    void deveRetornarAlunoPorIdComStatusCorreto() throws Exception {
+
         // Arrange
-        Aluno aluno = new Aluno("Leonardo", 10);
+        Aluno aluno = new Aluno("Leonardo Rossi", 5);
+        Aluno alunoSalvo = alunoRepository.save(aluno);
 
-        // Act
-        alunoService.atualizarPlanoSeElegivel(aluno);
-
-        // Assert
-        assertFalse(aluno.isPremium(), "O aluno não deveria ser Premium");
+        // Act & Assert
+        mockMvc.perform(get("/alunos/" + alunoSalvo.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nome", is("Leonardo Rossi")))
+                .andExpect(jsonPath("$.cursosConcluidos", is(5)))
+                .andExpect(jsonPath("$.premium", is(false)));
     }
 
-    // Guilherme
+    // Responsável: Leonardo Rossi
     @Test
-    void alunoParticipaDoForumEIncrementaCurso() {
+    void deveRegistrarParticipacaoNoForumEIncrementarCursosConcluidos() throws Exception {
+
         // Arrange
-        Aluno aluno = new Aluno("Maria", 11);
+        Aluno aluno = new Aluno("Leonardo Rossi", 10);
+        Aluno alunoSalvo = alunoRepository.save(aluno);
 
-        // Act
-        alunoService.registrarParticipacaoNoForum(aluno, "Nova mensagem");
-        alunoService.atualizarPlanoSeElegivel(aluno);
+        String jsonBody = objectMapper.writeValueAsString(bodyRequisicao);
 
-        // Assert
-        assertEquals(12, aluno.getCursosConcluidos(), "Cursos deveriam ter sido incrementados");
-        assertTrue(aluno.isPremium(), "O aluno deveria se tornar Premium após 12 cursos");
+        // Act & Assert
+        mockMvc.perform(post("/alunos/" + alunoSalvo.getId() + "/forum")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.cursosConcluidos", is(11)))
+                .andExpect(jsonPath("$.premium", is(false)));
+    }
+
+    // Responsável: Guilherme Massayuki
+    @Test
+    void devePromoverAlunoParaPremiumAoAlcancar12Cursos() throws Exception {
+
+        // Arrange
+        Aluno aluno = new Aluno("Guilherme Massayuki", 11);
+        Aluno alunoSalvo = alunoRepository.save(aluno);
+
+        String jsonBody = objectMapper.writeValueAsString(bodyRequisicao);
+
+        // Act & Assert
+        mockMvc.perform(post("/alunos/" + alunoSalvo.getId() + "/forum")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.cursosConcluidos", is(12)))
+                .andExpect(jsonPath("$.premium", is(true)));
+
+        Aluno alunoNoBanco = alunoRepository.findById(alunoSalvo.getId()).orElseThrow();
+        assertEquals(12, alunoNoBanco.getCursosConcluidos());
+        assertTrue(alunoNoBanco.isPremium());
+    }
+
+    // Responsável: Guilherme Massayuki
+    @Test
+    void deveRetornarErroAoBuscarAlunoInexistente() throws Exception {
+
+        // Arrange
+        long idInexistente = 9999L;
+
+        // Act & Assert
+         mockMvc.perform(get("/alunos/" + idInexistente))
+            .andExpect(status().isNotFound());
     }
 }
